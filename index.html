@@ -1,92 +1,235 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BTC Signal Robot</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>London BTC Signal Robot</title>
 <style>
-body{background:#0f0f0f;color:#fff;font-family:Arial;text-align:center;padding:20px}
-.card{background:#1a1a1a;border-radius:20px;padding:20px;max-width:400px;margin:auto;box-shadow:0 0 30px #00ff8855;animation:float 3s infinite}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-.price{font-size:36px;color:#00ff88;font-weight:bold}
-.signal{font-size:22px;padding:12px;border-radius:12px;margin:15px 0}
-.buy{background:#00ff8822;border:1px solid #00ff88;color:#00ff88}
-.sell{background:#ff335522;border:1px solid #ff3355;color:#ff3355}
-.wait{background:#ffaa0022;border:1px solid #ffaa00;color:#ffaa00}
-.box{display:flex;justify-content:space-between;background:#222;padding:10px;border-radius:10px;margin:5px 0}
-button{background:#00ff88;color:#000;border:none;padding:12px 20px;border-radius:10px;font-weight:bold;width:100%;cursor:pointer}
-small{color:#888}
+*{box-sizing:border-box}
+body{margin:0;background:#08111f;color:#edf4ff;font-family:Arial,sans-serif;padding:16px}
+main{max-width:900px;margin:auto}
+.card{background:#101c2d;border:1px solid #263951;border-radius:16px;padding:18px;margin-bottom:15px}
+h1{color:#36e0a1;font-size:25px}
+h2{margin-bottom:8px}
+.muted{color:#94a9c4;font-size:13px}
+.price{font-size:36px;font-weight:bold}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.metric{background:#0a1728;padding:12px;border-radius:10px;overflow-wrap:anywhere}
+.metric small{display:block;color:#94a9c4;margin-bottom:6px}
+button{padding:12px 15px;border:0;border-radius:9px;background:#36e0a1;color:#06151b;font-weight:bold;cursor:pointer;margin:5px 4px 5px 0}
+button.secondary{background:#203149;color:white}
+#signal{font-size:29px;font-weight:bold;color:#f7c96b}
+#status{padding:12px;background:#0a1728;border-radius:9px;color:#94a9c4;font-size:13px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #263951}
+.row span{color:#94a9c4}
+.row strong{text-align:right}
+canvas{width:100%;height:190px}
+@media(max-width:500px){.grid{grid-template-columns:1fr}.price{font-size:30px}}
 </style>
 </head>
 <body>
-<h2>🤖 BTC Smart Signal</h2>
+<main>
 <div class="card">
-<div class="price" id="price">$--</div>
-<small id="time">Loading BTC...</small>
-<div class="signal wait" id="signal">ANALYZING...</div>
-
-<div class="box"><span>Entry:</span><b id="entry">--</b></div>
-<div class="box"><span>Stop Loss:</span><b id="sl" style="color:#ff3355">--</b></div>
-<div class="box"><span>Take Profit:</span><b id="tp" style="color:#00ff88">--</b></div>
-<div class="box"><span>Confidence:</span><b id="conf">--</b></div>
-
-<button onclick="getSignal()">🔄 Scan Now</button>
-<p><small>⚠️ Educational only. Not financial advice. BTC is risky. Always use 1-2% risk per trade.</small></p>
+<h1>₿ London BTC Signal Robot</h1>
+<p class="muted">BTC/USDT · London session · 1-hour trading plan</p>
+<p id="session" class="muted">Checking London session...</p>
+<div class="muted">Bitcoin market price</div>
+<div class="price" id="price">Loading...</div>
+<p class="muted" id="updated">Connecting to public market data...</p>
 </div>
 
+<div class="card">
+<h2>🤖 Latest Signal</h2>
+<div id="signal">ANALYZING</div>
+<p id="reason" class="muted">Checking completed BTC candles...</p>
+<div class="grid">
+<div class="metric"><small>RSI · 15 minutes</small><strong id="rsi">--</strong></div>
+<div class="metric"><small>EMA 9 / 21</small><strong id="ema">--</strong></div>
+<div class="metric"><small>1-hour trend</small><strong id="trend">--</strong></div>
+<div class="metric"><small>Plan duration</small><strong>Up to 60 minutes</strong></div>
+</div>
+<br>
+<div class="row"><span>Entry reference</span><strong id="entry">--</strong></div>
+<div class="row"><span>Stop-loss reference</span><strong id="stop">--</strong></div>
+<div class="row"><span>Take-profit reference</span><strong id="target">--</strong></div>
+<br>
+<button onclick="refresh()">Refresh Signal</button>
+<button class="secondary" onclick="notifyMe()">Enable Alerts</button>
+<p id="status">Waiting for analysis...</p>
+</div>
+
+<div class="card">
+<h2>📈 Recent BTC Price</h2>
+<canvas id="chart" width="850" height="220"></canvas>
+<p class="muted">Public BTC/USDT spot data. Your FBS quote may differ.</p>
+</div>
+
+<div class="card">
+<h2>⚙️ Robot Settings</h2>
+<div class="row"><span>Market</span><strong>BTC/USDT only</strong></div>
+<div class="row"><span>London session</span><strong>08:00–16:30 London time</strong></div>
+<div class="row"><span>Signal indicators</span><strong>EMA + RSI + 1h trend</strong></div>
+<div class="row"><span>Outside session</span><strong>WAIT</strong></div>
+<div class="row"><span>Order execution</span><strong>Manual only</strong></div>
+</div>
+
+<div class="card">
+<h2>📋 Today's Signal Log</h2>
+<div id="history" class="muted">No signals recorded yet.</div>
+</div>
+
+<div class="card muted">
+<strong>Risk notice:</strong> This is an educational signal tool. It does not place trades or connect to MT5. Signals can lose money; there is no guaranteed daily profit. Keep this page open for browser notifications and automatic refreshes.
+</div>
+</main>
+
 <script>
-// Fetch BTC price
-async function fetchBTC(){
-  try{
-    let res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
-    let data = await res.json();
-    let p = parseFloat(data.price);
-    document.getElementById('price').innerText = '$'+ p.toFixed(2);
-    document.getElementById('time').innerText = new Date().toLocaleTimeString() + ' - Live';
-    return p;
-  }catch(e){ return 65000 + Math.random()*2000; }
+const API="https://data-api.binance.vision/api/v3";
+let prices=[], candles=[], lastSignal="";
+
+function $(id){return document.getElementById(id)}
+function fmt(n){
+ return Number(n).toLocaleString("en-US",{
+  style:"currency",currency:"USD",maximumFractionDigits:2
+ });
 }
-
-async function getSignal(){
-  let price = await fetchBTC();
-  document.getElementById('signal').innerText = 'ANALYZING...';
-  
-  // Simulated strategy: RSI + EMA logic (demo)
-  // In real bot you connect to TradingView RSI
-  let rsi = 30 + Math.random()*50; // 30-80
-  let trend = Math.random() > 0.5 ? 'UP' : 'DOWN';
-  
-  let entry = price;
-  let sl, tp, type, conf;
-
-  if(rsi < 40 && trend == 'UP'){
-    type = '🟢 BUY / LONG';
-    sl = entry * 0.985; // -1.5%
-    tp = entry * 1.03; // +3%
-    conf = '72%';
-    document.getElementById('signal').className = 'signal buy';
-  } else if(rsi > 60 && trend == 'DOWN'){
-    type = '🔴 SELL / SHORT';
-    sl = entry * 1.015;
-    tp = entry * 0.97;
-    conf = '68%';
-    document.getElementById('signal').className = 'signal sell';
-  } else {
-    type = '🟡 WAIT - NO CLEAR ENTRY';
-    sl = entry * 0.98;
-    tp = entry * 1.02;
-    conf = '45%';
-    document.getElementById('signal').className = 'signal wait';
+function londonTime(){
+ return new Intl.DateTimeFormat("en-GB",{
+  timeZone:"Europe/London",hour:"2-digit",minute:"2-digit",
+  weekday:"short",hourCycle:"h23"
+ }).formatToParts(new Date());
+}
+function sessionOpen(){
+ const p=Object.fromEntries(londonTime().map(x=>[x.type,x.value]));
+ const m=Number(p.hour)*60+Number(p.minute);
+ return !["Sat","Sun"].includes(p.weekday)&&m>=480&&m<990;
+}
+function ema(a,n){
+ if(a.length<n)return null;
+ let e=a.slice(0,n).reduce((s,v)=>s+v,0)/n;
+ for(let i=n;i<a.length;i++)e=a[i]*(2/(n+1))+e*(1-2/(n+1));
+ return e;
+}
+function rsi(a,n=14){
+ if(a.length<n+1)return null;
+ let up=0,down=0;
+ for(let i=a.length-n;i<a.length;i++){
+  let d=a[i]-a[i-1];
+  if(d>0)up+=d;else down-=d;
+ }
+ return down===0?100:100-100/(1+up/down);
+}
+async function get(url){
+ const r=await fetch(url);
+ if(!r.ok)throw Error("Market data unavailable. Try again.");
+ return r.json();
+}
+async function refresh(){
+ $("status").textContent="Downloading BTC market data...";
+ try{
+  const [ticker,k15,k1h]=await Promise.all([
+   get(API+"/ticker/price?symbol=BTCUSDT"),
+   get(API+"/klines?symbol=BTCUSDT&interval=15m&limit=100"),
+   get(API+"/klines?symbol=BTCUSDT&interval=1h&limit=80")
+  ]);
+  const now=Date.now();
+  candles=k15.filter(c=>Number(c[6])<now-1000);
+  const hours=k1h.filter(c=>Number(c[6])<now-1000);
+  prices=candles.map(c=>Number(c[4]));
+  const hp=hours.map(c=>Number(c[4]));
+  if(prices.length<30||hp.length<25)throw Error("Waiting for more candles.");
+  const price=Number(ticker.price);
+  $("price").textContent=fmt(price);
+  $("updated").textContent="Updated "+new Date().toLocaleTimeString();
+  const e9=ema(prices,9),e21=ema(prices,21);
+  const h9=ema(hp,9),h21=ema(hp,21),rv=rsi(prices);
+  $("rsi").textContent=rv.toFixed(1);
+  $("ema").textContent=e9>e21?"Bullish":e9<e21?"Bearish":"Flat";
+  $("trend").textContent=h9>h21?"Bullish":h9<h21?"Bearish":"Flat";
+  const p=Object.fromEntries(londonTime().map(x=>[x.type,x.value]));
+  $("session").textContent=sessionOpen()
+   ?"LONDON SESSION OPEN · "+p.hour+":"+p.minute
+   :"OUTSIDE LONDON SESSION · "+p.hour+":"+p.minute;
+  let dir="WAIT",why="No clear setup. Wait.";
+  if(!sessionOpen()){
+   why="Outside London session. No trade setup.";
+  }else if(e9>e21&&h9>h21&&rv>=50&&rv<=68){
+   dir="BUY";why="15m EMA bullish, 1h trend bullish, RSI confirms momentum.";
+  }else if(e9<e21&&h9<h21&&rv<=50&&rv>=32){
+   dir="SELL";why="15m EMA bearish, 1h trend bearish, RSI confirms momentum.";
   }
-
-  document.getElementById('signal').innerText = type;
-  document.getElementById('entry').innerText = '$'+entry.toFixed(2);
-  document.getElementById('sl').innerText = '$'+sl.toFixed(2);
-  document.getElementById('tp').innerText = '$'+tp.toFixed(2);
-  document.getElementById('conf').innerText = conf;
+  $("signal").textContent=dir;
+  $("signal").style.color=dir==="BUY"?"#36e0a1":dir==="SELL"?"#ff657a":"#f7c96b";
+  $("reason").textContent=why;
+  let recent=candles.slice(-14);
+  let hi=Math.max(...recent.map(c=>Number(c[2])));
+  let lo=Math.min(...recent.map(c=>Number(c[3])));
+  let avg=recent.reduce((s,c)=>s+Number(c[2])-Number(c[3]),0)/recent.length;
+  let stop=null,target=null;
+  if(dir==="BUY"){stop=lo-avg*.15;target=price+(price-stop)*1.5}
+  if(dir==="SELL"){stop=hi+avg*.15;target=price-(stop-price)*1.5}
+  $("entry").textContent=dir==="WAIT"?"No entry":fmt(price);
+  $("stop").textContent=stop===null?"--":fmt(stop);
+  $("target").textContent=target===null?"--":fmt(target);
+  drawChart(prices);
+  if(dir!=="WAIT"){
+   const key=dir+"-"+candles[candles.length-1][0];
+   if(key!==lastSignal){
+    lastSignal=key;
+    saveSignal(dir,why,price,stop,target);
+    if("Notification" in window&&Notification.permission==="granted")
+     new Notification("BTC signal: "+dir,{body:why});
+   }
+  }
+  $("status").textContent="Analysis complete. Refreshes every 60 seconds while open.";
+ }catch(e){
+  $("status").textContent=e.message;
+ }
 }
-
-getSignal();
-setInterval(fetchBTC, 10000);
+function drawChart(a){
+ const c=$("chart"),ctx=c.getContext("2d");
+ ctx.clearRect(0,0,c.width,c.height);
+ const v=a.slice(-48),lo=Math.min(...v),hi=Math.max(...v);
+ if(!v.length)return;
+ ctx.strokeStyle="#36e0a1";ctx.lineWidth=3;ctx.beginPath();
+ v.forEach((n,i)=>{
+  const x=10+i*(c.width-20)/(v.length-1);
+  const y=c.height-10-(n-lo)/(hi-lo||1)*(c.height-20);
+  if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+ });
+ ctx.stroke();
+}
+function saveSignal(dir,why,price,stop,target){
+ let a=JSON.parse(localStorage.getItem("btcLog")||"[]");
+ a.unshift({day:new Date().toISOString().slice(0,10),dir,why,price,stop,target,time:new Date().toLocaleTimeString()});
+ a=a.slice(0,30);localStorage.setItem("btcLog",JSON.stringify(a));
+ showHistory();
+}
+function showHistory(){
+ let a=JSON.parse(localStorage.getItem("btcLog")||"[]");
+ const day=new Date().toISOString().slice(0,10);
+ a=a.filter(x=>x.day===day);
+ $("history").innerHTML=a.length?a.map(x=>
+  "<p><strong>"+x.dir+"</strong> · "+x.time+
+  "<br>"+x.why+"<br>Entry "+fmt(x.price)+
+  " · Stop "+fmt(x.stop)+" · Target "+fmt(x.target)+"</p>"
+ ).join(""):"No BUY/SELL signals recorded today.";
+}
+async function notifyMe(){
+ if(!("Notification" in window)){
+  $("status").textContent="Browser notifications are not supported.";
+  return;
+ }
+ const p=await Notification.requestPermission();
+ $("status").textContent=p==="granted"
+  ?"Alerts enabled while this page is open."
+  :"Notifications were not enabled.";
+}
+showHistory();
+refresh();
+setInterval(refresh,60000);
 </script>
 </body>
   </html>
+  
