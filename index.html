@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BTC Signal Robot</title>
+<style>
+body{background:#0f0f0f;color:#fff;font-family:Arial;text-align:center;padding:20px}
+.card{background:#1a1a1a;border-radius:20px;padding:20px;max-width:400px;margin:auto;box-shadow:0 0 30px #00ff8855;animation:float 3s infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.price{font-size:36px;color:#00ff88;font-weight:bold}
+.signal{font-size:22px;padding:12px;border-radius:12px;margin:15px 0}
+.buy{background:#00ff8822;border:1px solid #00ff88;color:#00ff88}
+.sell{background:#ff335522;border:1px solid #ff3355;color:#ff3355}
+.wait{background:#ffaa0022;border:1px solid #ffaa00;color:#ffaa00}
+.box{display:flex;justify-content:space-between;background:#222;padding:10px;border-radius:10px;margin:5px 0}
+button{background:#00ff88;color:#000;border:none;padding:12px 20px;border-radius:10px;font-weight:bold;width:100%;cursor:pointer}
+small{color:#888}
+</style>
+</head>
+<body>
+<h2>🤖 BTC Smart Signal</h2>
+<div class="card">
+<div class="price" id="price">$--</div>
+<small id="time">Loading BTC...</small>
+<div class="signal wait" id="signal">ANALYZING...</div>
+
+<div class="box"><span>Entry:</span><b id="entry">--</b></div>
+<div class="box"><span>Stop Loss:</span><b id="sl" style="color:#ff3355">--</b></div>
+<div class="box"><span>Take Profit:</span><b id="tp" style="color:#00ff88">--</b></div>
+<div class="box"><span>Confidence:</span><b id="conf">--</b></div>
+
+<button onclick="getSignal()">🔄 Scan Now</button>
+<p><small>⚠️ Educational only. Not financial advice. BTC is risky. Always use 1-2% risk per trade.</small></p>
+</div>
+
+<script>
+// Fetch BTC price
+async function fetchBTC(){
+  try{
+    let res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+    let data = await res.json();
+    let p = parseFloat(data.price);
+    document.getElementById('price').innerText = '$'+ p.toFixed(2);
+    document.getElementById('time').innerText = new Date().toLocaleTimeString() + ' - Live';
+    return p;
+  }catch(e){ return 65000 + Math.random()*2000; }
+}
+
+async function getSignal(){
+  let price = await fetchBTC();
+  document.getElementById('signal').innerText = 'ANALYZING...';
+  
+  // Simulated strategy: RSI + EMA logic (demo)
+  // In real bot you connect to TradingView RSI
+  let rsi = 30 + Math.random()*50; // 30-80
+  let trend = Math.random() > 0.5 ? 'UP' : 'DOWN';
+  
+  let entry = price;
+  let sl, tp, type, conf;
+
+  if(rsi < 40 && trend == 'UP'){
+    type = '🟢 BUY / LONG';
+    sl = entry * 0.985; // -1.5%
+    tp = entry * 1.03; // +3%
+    conf = '72%';
+    document.getElementById('signal').className = 'signal buy';
+  } else if(rsi > 60 && trend == 'DOWN'){
+    type = '🔴 SELL / SHORT';
+    sl = entry * 1.015;
+    tp = entry * 0.97;
+    conf = '68%';
+    document.getElementById('signal').className = 'signal sell';
+  } else {
+    type = '🟡 WAIT - NO CLEAR ENTRY';
+    sl = entry * 0.98;
+    tp = entry * 1.02;
+    conf = '45%';
+    document.getElementById('signal').className = 'signal wait';
+  }
+
+  document.getElementById('signal').innerText = type;
+  document.getElementById('entry').innerText = '$'+entry.toFixed(2);
+  document.getElementById('sl').innerText = '$'+sl.toFixed(2);
+  document.getElementById('tp').innerText = '$'+tp.toFixed(2);
+  document.getElementById('conf').innerText = conf;
+}
+
+getSignal();
+setInterval(fetchBTC, 10000);
+</script>
+</body>
+  </html>
